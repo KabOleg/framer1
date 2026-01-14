@@ -1,0 +1,1343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Particle Attraction System</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body, html {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            font-family: 'Montserrat', serif;
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            color: #fff;
+        }
+
+        #app {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            touch-action: none;
+            user-select: none;
+            overflow: hidden;
+        }
+
+        #canvas {
+            position: fixed;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            left: 0;
+            overflow: hidden;
+            z-index: 1;
+        }
+
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            padding: 25px 30px;
+            z-index: 10;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: 700;
+            background: linear-gradient(90deg, #ff7e5f, #feb47b);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo i {
+            font-size: 28px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .controls-panel {
+            position: fixed;
+            top: 100px;
+            right: 30px;
+            width: 320px;
+            background: rgba(10, 10, 20, 0.85);
+            backdrop-filter: blur(15px);
+            border-radius: 16px;
+            padding: 25px;
+            z-index: 10;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+            transform: translateY(0);
+            transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .controls-panel.collapsed {
+            transform: translateY(calc(100% - 60px));
+        }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .panel-header h3 {
+            font-size: 18px;
+            font-weight: 600;
+            color: #feb47b;
+        }
+
+        .toggle-panel {
+            background: none;
+            border: none;
+            color: #fff;
+            font-size: 20px;
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+
+        .toggle-panel:hover {
+            transform: rotate(180deg);
+        }
+
+        .control-group {
+            margin-bottom: 22px;
+        }
+
+        .control-group h4 {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #a0a0ff;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .control-group h4 i {
+            font-size: 16px;
+        }
+
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .slider-container label {
+            font-size: 13px;
+            min-width: 140px;
+            color: #ccc;
+        }
+
+        input[type="range"] {
+            flex: 1;
+            height: 6px;
+            -webkit-appearance: none;
+            appearance: none;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            outline: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #ff7e5f, #feb47b);
+            cursor: pointer;
+            border: 2px solid #fff;
+            box-shadow: 0 0 10px rgba(255, 126, 95, 0.8);
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #ff7e5f, #feb47b);
+            cursor: pointer;
+            border: 2px solid #fff;
+            box-shadow: 0 0 10px rgba(255, 126, 95, 0.8);
+        }
+
+        .color-controls {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .color-btn {
+            height: 40px;
+            border-radius: 10px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.05);
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 13px;
+            gap: 8px;
+        }
+
+        .color-btn:hover {
+            transform: translateY(-3px);
+            border-color: rgba(255, 255, 255, 0.4);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .color-btn.active {
+            border-color: #ff7e5f;
+            box-shadow: 0 0 15px rgba(255, 126, 95, 0.5);
+        }
+
+        .buttons {
+            position: fixed;
+            width: 100%;
+            bottom: 25px;
+            z-index: 10;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        button, .btn-link {
+            color: white;
+            font-family: "Montserrat", serif;
+            font-size: 14px;
+            font-weight: 500;
+            text-decoration: none;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 12px 24px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        button:hover, .btn-link:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        button:active, .btn-link:active {
+            transform: translateY(-1px);
+        }
+
+        .primary-btn {
+            background: linear-gradient(90deg, #ff7e5f, #feb47b);
+            border: none;
+            color: #000;
+            font-weight: 600;
+        }
+
+        .primary-btn:hover {
+            background: linear-gradient(90deg, #ff6b47, #fea05c);
+            color: #000;
+        }
+
+        .stats {
+            position: fixed;
+            top: 100px;
+            left: 30px;
+            background: rgba(10, 10, 20, 0.7);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            padding: 20px;
+            z-index: 10;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            min-width: 200px;
+        }
+
+        .stats h3 {
+            font-size: 16px;
+            margin-bottom: 15px;
+            color: #feb47b;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 13px;
+        }
+
+        .stat-item span:last-child {
+            font-weight: 600;
+            color: #a0a0ff;
+        }
+
+        .instructions {
+            position: fixed;
+            bottom: 100px;
+            left: 30px;
+            background: rgba(10, 10, 20, 0.7);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            padding: 20px;
+            z-index: 10;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            max-width: 300px;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        .instructions h3 {
+            font-size: 16px;
+            margin-bottom: 10px;
+            color: #feb47b;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .instructions ul {
+            padding-left: 20px;
+        }
+
+        .instructions li {
+            margin-bottom: 8px;
+        }
+
+        .color-display {
+            display: flex;
+            gap: 15px;
+            margin-top: 10px;
+            justify-content: center;
+        }
+
+        .color-box {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .mode-toggle {
+            display: flex;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            padding: 5px;
+            margin-bottom: 20px;
+        }
+
+        .mode-btn {
+            flex: 1;
+            text-align: center;
+            padding: 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.3s;
+        }
+
+        .mode-btn.active {
+            background: rgba(255, 255, 255, 0.15);
+            font-weight: 600;
+            color: #feb47b;
+        }
+
+        @media (max-width: 768px) {
+            .header {
+                padding: 15px 20px;
+            }
+            
+            .controls-panel {
+                width: 90%;
+                right: 5%;
+                top: 80px;
+            }
+            
+            .stats, .instructions {
+                position: relative;
+                top: auto;
+                left: auto;
+                bottom: auto;
+                margin: 15px;
+                max-width: calc(100% - 30px);
+            }
+            
+            .buttons {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            button, .btn-link {
+                width: 90%;
+                justify-content: center;
+            }
+        }
+
+        .performance {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.5);
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+            z-index: 10;
+            display: flex;
+            gap: 15px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .performance span {
+            color: #a0a0ff;
+        }
+
+        .fps {
+            color: #4CAF50 !important;
+        }
+
+        .particles-count {
+            color: #ff7e5f !important;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <canvas id="canvas"></canvas>
+        
+        <div class="header">
+            <div class="logo">
+                <i class="fas fa-atom"></i> Particle Attraction System
+            </div>
+            <div class="controls">
+                <button id="fullscreen-btn" class="fullscreen-btn">
+                    <i class="fas fa-expand"></i> Fullscreen
+                </button>
+            </div>
+        </div>
+        
+        <div class="controls-panel">
+            <div class="panel-header">
+                <h3><i class="fas fa-sliders-h"></i> Particle Controls</h3>
+                <button class="toggle-panel" id="toggle-panel">
+                    <i class="fas fa-chevron-up"></i>
+                </button>
+            </div>
+            
+            <div class="control-group">
+                <h4><i class="fas fa-magnet"></i> Attraction Settings</h4>
+                <div class="slider-container">
+                    <label>Intensity</label>
+                    <input type="range" id="attraction-slider" min="0" max="2" step="0.05" value="0.75">
+                </div>
+                <div class="slider-container">
+                    <label>Radius</label>
+                    <input type="range" id="radius-slider" min="50" max="500" step="10" value="200">
+                </div>
+            </div>
+            
+            <div class="control-group">
+                <h4><i class="fas fa-expand-arrows-alt"></i> Particle Settings</h4>
+                <div class="slider-container">
+                    <label>Size</label>
+                    <input type="range" id="size-slider" min="0.5" max="5" step="0.1" value="1.5">
+                </div>
+                <div class="slider-container">
+                    <label>Count</label>
+                    <input type="range" id="count-slider" min="50" max="2000" step="50" value="800">
+                </div>
+                <div class="slider-container">
+                    <label>Speed</label>
+                    <input type="range" id="speed-slider" min="0.1" max="3" step="0.1" value="1">
+                </div>
+            </div>
+            
+            <div class="control-group">
+                <h4><i class="fas fa-palette"></i> Color Mode</h4>
+                <div class="mode-toggle">
+                    <div class="mode-btn active" data-mode="dual">Dual Colors</div>
+                    <div class="mode-btn" data-mode="gradient">Gradient</div>
+                    <div class="mode-btn" data-mode="rainbow">Rainbow</div>
+                </div>
+                
+                <div class="color-controls">
+                    <button class="color-btn active" id="color1-btn" data-color="light1">
+                        <i class="fas fa-sun"></i> Light 1
+                    </button>
+                    <button class="color-btn" id="color2-btn" data-color="light2">
+                        <i class="fas fa-moon"></i> Light 2
+                    </button>
+                    <button class="color-btn" id="random-colors-btn">
+                        <i class="fas fa-random"></i> Random Colors
+                    </button>
+                    <button class="color-btn" id="preset-colors-btn">
+                        <i class="fas fa-palette"></i> Presets
+                    </button>
+                </div>
+                
+                <div class="color-display">
+                    <div class="color-box" id="color1-display" style="background: #ff7e5f;"></div>
+                    <div class="color-box" id="color2-display" style="background: #a0a0ff;"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="stats">
+            <h3><i class="fas fa-chart-bar"></i> System Stats</h3>
+            <div class="stat-item">
+                <span>Particles:</span>
+                <span id="particles-count">800</span>
+            </div>
+            <div class="stat-item">
+                <span>Attraction:</span>
+                <span id="attraction-value">0.75</span>
+            </div>
+            <div class="stat-item">
+                <span>Size:</span>
+                <span id="size-value">1.5</span>
+            </div>
+            <div class="stat-item">
+                <span>Mode:</span>
+                <span id="mode-value">Dual Colors</span>
+            </div>
+        </div>
+        
+        <div class="instructions">
+            <h3><i class="fas fa-info-circle"></i> Instructions</h3>
+            <ul>
+                <li>Move cursor to attract particles</li>
+                <li>Click to create particle explosion</li>
+                <li>Use controls to adjust parameters</li>
+                <li>Try different color modes</li>
+                <li>Toggle fullscreen for immersion</li>
+            </ul>
+        </div>
+        
+        <div class="performance">
+            <div>FPS: <span class="fps" id="fps-counter">60</span></div>
+            <div>Particles: <span class="particles-count" id="performance-count">800</span></div>
+        </div>
+        
+        <div class="buttons">
+            <button type="button" id="colors-btn" class="primary-btn">
+                <i class="fas fa-random"></i> Random Colors
+            </button>
+            <button type="button" id="reset-btn">
+                <i class="fas fa-redo"></i> Reset Settings
+            </button>
+            <a href="https://www.framer.com/@kevin-levron/" target="_blank" class="btn-link">
+                <i class="fas fa-external-link-alt"></i> Framer Component
+            </a>
+            <button type="button" id="toggle-ui-btn">
+                <i class="fas fa-eye"></i> Toggle UI
+            </button>
+        </div>
+    </div>
+
+    <!-- Three.js and custom script -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.min.js"></script>
+    <script>
+        // Enhanced Particle Attraction System
+        // Based on AttractionCursor by Kevin Levron
+        
+        class ParticleAttractionSystem {
+            constructor(canvasId, options = {}) {
+                this.canvas = document.getElementById(canvasId);
+                this.options = {
+                    particles: {
+                        attractionIntensity: options.particles?.attractionIntensity || 0.75,
+                        size: options.particles?.size || 1.5,
+                        count: options.particles?.count || 800,
+                        speed: options.particles?.speed || 1.0,
+                        radius: options.particles?.radius || 200,
+                        colorMode: options.particles?.colorMode || 'dual'
+                    },
+                    ...options
+                };
+                
+                // Colors
+                this.color1 = new THREE.Color(0xff7e5f);
+                this.color2 = new THREE.Color(0xa0a0ff);
+                this.colorPresets = [
+                    {c1: 0xff7e5f, c2: 0xfeb47b, name: "Sunset"},
+                    {c1: 0x00c6ff, c2: 0x0072ff, name: "Ocean"},
+                    {c1: 0x834d9b, c2: 0xd04ed6, name: "Purple"},
+                    {c1: 0x11998e, c2: 0x38ef7d, name: "Emerald"},
+                    {c1: 0xff416c, c2: 0xff4b2b, name: "Fire"},
+                    {c1: 0x000428, c2: 0x004e92, name: "Midnight"},
+                    {c1: 0xfd746c, c2: 0xff9068, name: "Coral"},
+                    {c1: 0x7b4397, c2: 0xdc2430, name: "Berry"}
+                ];
+                
+                // System state
+                this.scene = null;
+                this.camera = null;
+                this.renderer = null;
+                this.particles = null;
+                this.particleSystem = null;
+                this.light1 = null;
+                this.light2 = null;
+                this.mouse = new THREE.Vector2(0, 0);
+                this.raycaster = new THREE.Raycaster();
+                this.clock = new THREE.Clock();
+                this.frameCount = 0;
+                this.lastTime = performance.now();
+                this.fps = 60;
+                
+                // Initialize
+                this.init();
+                this.setupEventListeners();
+                this.animate();
+            }
+            
+            init() {
+                // Create scene
+                this.scene = new THREE.Scene();
+                this.scene.background = new THREE.Color(0x0a0a14);
+                
+                // Create camera
+                this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+                this.camera.position.z = 5;
+                
+                // Create renderer
+                this.renderer = new THREE.WebGLRenderer({ 
+                    canvas: this.canvas,
+                    antialias: true,
+                    alpha: true
+                });
+                this.renderer.setSize(window.innerWidth, window.innerHeight);
+                this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+                this.renderer.shadowMap.enabled = true;
+                this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+                
+                // Create lights
+                this.light1 = new THREE.PointLight(this.color1, 1.5, 100);
+                this.light1.position.set(-2, 2, 5);
+                this.scene.add(this.light1);
+                
+                this.light2 = new THREE.PointLight(this.color2, 1.5, 100);
+                this.light2.position.set(2, -2, 5);
+                this.scene.add(this.light2);
+                
+                // Add ambient light
+                const ambientLight = new THREE.AmbientLight(0x222222);
+                this.scene.add(ambientLight);
+                
+                // Create particles
+                this.createParticles();
+                
+                // Handle window resize
+                window.addEventListener('resize', () => this.onWindowResize());
+            }
+            
+            createParticles() {
+                const particleCount = this.options.particles.count;
+                const geometry = new THREE.BufferGeometry();
+                const positions = new Float32Array(particleCount * 3);
+                const colors = new Float32Array(particleCount * 3);
+                const velocities = new Float32Array(particleCount * 3);
+                const sizes = new Float32Array(particleCount);
+                
+                // Initialize particles in a sphere
+                for (let i = 0; i < particleCount; i++) {
+                    // Random position in a sphere
+                    const radius = 10;
+                    const theta = Math.random() * Math.PI * 2;
+                    const phi = Math.acos((Math.random() * 2) - 1);
+                    
+                    const x = radius * Math.sin(phi) * Math.cos(theta);
+                    const y = radius * Math.sin(phi) * Math.sin(theta);
+                    const z = radius * Math.cos(phi);
+                    
+                    positions[i * 3] = x;
+                    positions[i * 3 + 1] = y;
+                    positions[i * 3 + 2] = z;
+                    
+                    // Random velocity
+                    velocities[i * 3] = (Math.random() - 0.5) * 0.02;
+                    velocities[i * 3 + 1] = (Math.random() - 0.5) * 0.02;
+                    velocities[i * 3 + 2] = (Math.random() - 0.5) * 0.02;
+                    
+                    // Color based on position
+                    const t = (y + radius) / (2 * radius);
+                    const color = new THREE.Color();
+                    color.lerpColors(this.color1, this.color2, t);
+                    
+                    colors[i * 3] = color.r;
+                    colors[i * 3 + 1] = color.g;
+                    colors[i * 3 + 2] = color.b;
+                    
+                    // Random size
+                    sizes[i] = Math.random() * this.options.particles.size + 0.5;
+                }
+                
+                geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+                geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+                geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+                
+                // Store velocities in geometry for animation
+                geometry.setAttribute('velocity', new THREE.BufferAttribute(velocities, 3));
+                
+                const material = new THREE.PointsMaterial({
+                    size: this.options.particles.size,
+                    vertexColors: true,
+                    transparent: true,
+                    opacity: 0.8,
+                    blending: THREE.AdditiveBlending,
+                    sizeAttenuation: true
+                });
+                
+                this.particleSystem = new THREE.Points(geometry, material);
+                this.scene.add(this.particleSystem);
+                
+                // Store reference to geometry for animation
+                this.particles = geometry;
+            }
+            
+            updateParticles() {
+                const positions = this.particles.attributes.position.array;
+                const velocities = this.particles.attributes.velocity.array;
+                const colors = this.particles.attributes.color.array;
+                const count = this.options.particles.count;
+                
+                // Convert mouse coordinates to normalized device coordinates
+                const mouseX = (this.mouse.x / window.innerWidth) * 2 - 1;
+                const mouseY = -(this.mouse.y / window.innerHeight) * 2 + 1;
+                
+                // Create vector for mouse position in 3D space
+                const mouseVector = new THREE.Vector3(mouseX, mouseY, 0.5);
+                mouseVector.unproject(this.camera);
+                mouseVector.sub(this.camera.position).normalize();
+                
+                // Calculate intersection with z=0 plane
+                const distance = -this.camera.position.z / mouseVector.z;
+                const target = this.camera.position.clone().add(mouseVector.multiplyScalar(distance));
+                
+                // Update each particle
+                for (let i = 0; i < count; i++) {
+                    const i3 = i * 3;
+                    
+                    // Calculate distance to mouse
+                    const dx = target.x - positions[i3];
+                    const dy = target.y - positions[i3 + 1];
+                    const dz = target.z - positions[i3 + 2];
+                    const distanceToMouse = Math.sqrt(dx * dx + dy * dy + dz * dz);
+                    
+                    // Apply attraction force based on distance
+                    if (distanceToMouse < this.options.particles.radius) {
+                        const force = (1 - distanceToMouse / this.options.particles.radius) * 
+                                     this.options.particles.attractionIntensity * 0.01 * 
+                                     this.options.particles.speed;
+                        
+                        velocities[i3] += (dx / distanceToMouse) * force;
+                        velocities[i3 + 1] += (dy / distanceToMouse) * force;
+                        velocities[i3 + 2] += (dz / distanceToMouse) * force;
+                    }
+                    
+                    // Apply velocity damping
+                    velocities[i3] *= 0.98;
+                    velocities[i3 + 1] *= 0.98;
+                    velocities[i3 + 2] *= 0.98;
+                    
+                    // Update position
+                    positions[i3] += velocities[i3];
+                    positions[i3 + 1] += velocities[i3 + 1];
+                    positions[i3 + 2] += velocities[i3 + 2];
+                    
+                    // Apply boundary conditions
+                    const boundary = 15;
+                    if (Math.abs(positions[i3]) > boundary) velocities[i3] = -velocities[i3] * 0.5;
+                    if (Math.abs(positions[i3 + 1]) > boundary) velocities[i3 + 1] = -velocities[i3 + 1] * 0.5;
+                    if (Math.abs(positions[i3 + 2]) > boundary) velocities[i3 + 2] = -velocities[i3 + 2] * 0.5;
+                    
+                    // Update colors based on mode
+                    this.updateParticleColor(i, colors, positions);
+                }
+                
+                // Mark attributes as needing update
+                this.particles.attributes.position.needsUpdate = true;
+                this.particles.attributes.color.needsUpdate = true;
+            }
+            
+            updateParticleColor(i, colors, positions) {
+                const i3 = i * 3;
+                const y = positions[i3 + 1];
+                const radius = 10;
+                const t = (y + radius) / (2 * radius);
+                
+                let color = new THREE.Color();
+                
+                switch(this.options.particles.colorMode) {
+                    case 'dual':
+                        color.lerpColors(this.color1, this.color2, t);
+                        break;
+                    case 'gradient':
+                        // Gradient based on position
+                        const x = positions[i3];
+                        const angle = Math.atan2(y, x);
+                        const normalizedAngle = (angle + Math.PI) / (2 * Math.PI);
+                        color.lerpColors(this.color1, this.color2, normalizedAngle);
+                        break;
+                    case 'rainbow':
+                        // Rainbow effect
+                        const hue = (Date.now() * 0.001 + i * 0.01) % 1;
+                        color.setHSL(hue, 0.8, 0.6);
+                        break;
+                }
+                
+                colors[i3] = color.r;
+                colors[i3 + 1] = color.g;
+                colors[i3 + 2] = color.b;
+            }
+            
+            onWindowResize() {
+                this.camera.aspect = window.innerWidth / window.innerHeight;
+                this.camera.updateProjectionMatrix();
+                this.renderer.setSize(window.innerWidth, window.innerHeight);
+            }
+            
+            setupEventListeners() {
+                // Mouse movement
+                window.addEventListener('mousemove', (e) => {
+                    this.mouse.x = e.clientX;
+                    this.mouse.y = e.clientY;
+                });
+                
+                // Touch movement
+                window.addEventListener('touchmove', (e) => {
+                    if (e.touches.length > 0) {
+                        this.mouse.x = e.touches[0].clientX;
+                        this.mouse.y = e.touches[0].clientY;
+                        e.preventDefault();
+                    }
+                }, { passive: false });
+                
+                // Click explosion
+                window.addEventListener('click', (e) => {
+                    this.createExplosion(e.clientX, e.clientY);
+                });
+            }
+            
+            createExplosion(x, y) {
+                const positions = this.particles.attributes.position.array;
+                const velocities = this.particles.attributes.velocity.array;
+                const count = Math.min(100, this.options.particles.count);
+                
+                // Convert click coordinates
+                const mouseX = (x / window.innerWidth) * 2 - 1;
+                const mouseY = -(y / window.innerHeight) * 2 + 1;
+                
+                const mouseVector = new THREE.Vector3(mouseX, mouseY, 0.5);
+                mouseVector.unproject(this.camera);
+                mouseVector.sub(this.camera.position).normalize();
+                
+                const distance = -this.camera.position.z / mouseVector.z;
+                const target = this.camera.position.clone().add(mouseVector.multiplyScalar(distance));
+                
+                // Affect random particles near the click
+                for (let i = 0; i < count; i++) {
+                    const randomIndex = Math.floor(Math.random() * this.options.particles.count);
+                    const i3 = randomIndex * 3;
+                    
+                    // Calculate direction away from explosion
+                    const dx = positions[i3] - target.x;
+                    const dy = positions[i3 + 1] - target.y;
+                    const dz = positions[i3 + 2] - target.z;
+                    const distanceToExplosion = Math.sqrt(dx * dx + dy * dy + dz * dz);
+                    
+                    if (distanceToExplosion < 5) {
+                        // Apply explosion force
+                        const force = 0.1;
+                        velocities[i3] += (dx / distanceToExplosion) * force;
+                        velocities[i3 + 1] += (dy / distanceToExplosion) * force;
+                        velocities[i3 + 2] += (dz / distanceToExplosion) * force;
+                    }
+                }
+            }
+            
+            updateFPS() {
+                this.frameCount++;
+                const currentTime = performance.now();
+                
+                if (currentTime >= this.lastTime + 1000) {
+                    this.fps = Math.round((this.frameCount * 1000) / (currentTime - this.lastTime));
+                    this.frameCount = 0;
+                    this.lastTime = currentTime;
+                    
+                    // Update FPS display
+                    document.getElementById('fps-counter').textContent = this.fps;
+                }
+            }
+            
+            animate() {
+                requestAnimationFrame(() => this.animate());
+                
+                // Update particles
+                this.updateParticles();
+                
+                // Rotate lights slightly for visual interest
+                const time = Date.now() * 0.001;
+                this.light1.position.x = Math.sin(time * 0.5) * 3;
+                this.light1.position.y = Math.cos(time * 0.3) * 2;
+                
+                this.light2.position.x = Math.cos(time * 0.4) * 3;
+                this.light2.position.y = Math.sin(time * 0.6) * 2;
+                
+                // Render scene
+                this.renderer.render(this.scene, this.camera);
+                
+                // Update FPS counter
+                this.updateFPS();
+            }
+            
+            // Public methods for UI control
+            setAttractionIntensity(value) {
+                this.options.particles.attractionIntensity = parseFloat(value);
+                document.getElementById('attraction-value').textContent = value;
+            }
+            
+            setParticleSize(value) {
+                this.options.particles.size = parseFloat(value);
+                this.particleSystem.material.size = value;
+                document.getElementById('size-value').textContent = value;
+            }
+            
+            setParticleCount(value) {
+                const newCount = parseInt(value);
+                if (newCount !== this.options.particles.count) {
+                    this.options.particles.count = newCount;
+                    this.scene.remove(this.particleSystem);
+                    this.createParticles();
+                    document.getElementById('particles-count').textContent = value;
+                    document.getElementById('performance-count').textContent = value;
+                }
+            }
+            
+            setParticleSpeed(value) {
+                this.options.particles.speed = parseFloat(value);
+            }
+            
+            setAttractionRadius(value) {
+                this.options.particles.radius = parseInt(value);
+            }
+            
+            setColorMode(mode) {
+                this.options.particles.colorMode = mode;
+                document.getElementById('mode-value').textContent = 
+                    mode === 'dual' ? 'Dual Colors' : 
+                    mode === 'gradient' ? 'Gradient' : 'Rainbow';
+            }
+            
+            setLight1Color(color) {
+                this.color1 = new THREE.Color(color);
+                this.light1.color.set(color);
+                document.getElementById('color1-display').style.background = `#${color.toString(16).padStart(6, '0')}`;
+            }
+            
+            setLight2Color(color) {
+                this.color2 = new THREE.Color(color);
+                this.light2.color.set(color);
+                document.getElementById('color2-display').style.background = `#${color.toString(16).padStart(6, '0')}`;
+            }
+            
+            setRandomColors() {
+                const color1 = Math.random() * 0xffffff;
+                const color2 = Math.random() * 0xffffff;
+                this.setLight1Color(color1);
+                this.setLight2Color(color2);
+            }
+            
+            setPresetColors(presetIndex) {
+                const preset = this.colorPresets[presetIndex];
+                this.setLight1Color(preset.c1);
+                this.setLight2Color(preset.c2);
+            }
+        }
+
+        // Initialize application when DOM is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            // Initialize particle system
+            const app = new ParticleAttractionSystem('canvas', {
+                particles: {
+                    attractionIntensity: 0.75,
+                    size: 1.5,
+                    count: 800,
+                    speed: 1.0,
+                    radius: 200,
+                    colorMode: 'dual'
+                }
+            });
+            
+            // UI Controls
+            const attractionSlider = document.getElementById('attraction-slider');
+            const sizeSlider = document.getElementById('size-slider');
+            const countSlider = document.getElementById('count-slider');
+            const speedSlider = document.getElementById('speed-slider');
+            const radiusSlider = document.getElementById('radius-slider');
+            const colorsBtn = document.getElementById('colors-btn');
+            const randomColorsBtn = document.getElementById('random-colors-btn');
+            const presetColorsBtn = document.getElementById('preset-colors-btn');
+            const color1Btn = document.getElementById('color1-btn');
+            const color2Btn = document.getElementById('color2-btn');
+            const resetBtn = document.getElementById('reset-btn');
+            const fullscreenBtn = document.getElementById('fullscreen-btn');
+            const toggleUIBtn = document.getElementById('toggle-ui-btn');
+            const togglePanelBtn = document.getElementById('toggle-panel');
+            const modeButtons = document.querySelectorAll('.mode-btn');
+            const framerLink = document.querySelector('.btn-link');
+            
+            // Initialize UI values
+            attractionSlider.value = app.options.particles.attractionIntensity;
+            sizeSlider.value = app.options.particles.size;
+            countSlider.value = app.options.particles.count;
+            speedSlider.value = app.options.particles.speed;
+            radiusSlider.value = app.options.particles.radius;
+            
+            // Event listeners for sliders
+            attractionSlider.addEventListener('input', (e) => {
+                app.setAttractionIntensity(e.target.value);
+            });
+            
+            sizeSlider.addEventListener('input', (e) => {
+                app.setParticleSize(e.target.value);
+            });
+            
+            countSlider.addEventListener('input', (e) => {
+                app.setParticleCount(e.target.value);
+            });
+            
+            speedSlider.addEventListener('input', (e) => {
+                app.setParticleSpeed(e.target.value);
+            });
+            
+            radiusSlider.addEventListener('input', (e) => {
+                app.setAttractionRadius(e.target.value);
+            });
+            
+            // Event listeners for buttons
+            colorsBtn.addEventListener('click', () => {
+                app.setRandomColors();
+                
+                // Add visual feedback
+                colorsBtn.innerHTML = '<i class="fas fa-check"></i> Colors Changed!';
+                setTimeout(() => {
+                    colorsBtn.innerHTML = '<i class="fas fa-random"></i> Random Colors';
+                }, 1000);
+            });
+            
+            randomColorsBtn.addEventListener('click', () => {
+                app.setRandomColors();
+                
+                // Toggle active state
+                document.querySelectorAll('.color-btn').forEach(btn => btn.classList.remove('active'));
+                randomColorsBtn.classList.add('active');
+            });
+            
+            presetColorsBtn.addEventListener('click', () => {
+                // Cycle through presets
+                const currentColor1 = app.color1.getHex();
+                const currentColor2 = app.color2.getHex();
+                
+                let presetIndex = app.colorPresets.findIndex(preset => 
+                    preset.c1 === currentColor1 && preset.c2 === currentColor2);
+                
+                presetIndex = (presetIndex + 1) % app.colorPresets.length;
+                app.setPresetColors(presetIndex);
+                
+                // Update button text
+                const presetName = app.colorPresets[presetIndex].name;
+                presetColorsBtn.innerHTML = `<i class="fas fa-palette"></i> ${presetName}`;
+                
+                // Toggle active state
+                document.querySelectorAll('.color-btn').forEach(btn => btn.classList.remove('active'));
+                presetColorsBtn.classList.add('active');
+            });
+            
+            color1Btn.addEventListener('click', () => {
+                // Create a color picker
+                const color = prompt('Enter hex color for Light 1 (e.g., #ff7e5f):', '#' + app.color1.getHex().toString(16).padStart(6, '0'));
+                if (color) {
+                    app.setLight1Color(color);
+                    
+                    // Toggle active state
+                    document.querySelectorAll('.color-btn').forEach(btn => btn.classList.remove('active'));
+                    color1Btn.classList.add('active');
+                }
+            });
+            
+            color2Btn.addEventListener('click', () => {
+                // Create a color picker
+                const color = prompt('Enter hex color for Light 2 (e.g., #a0a0ff):', '#' + app.color2.getHex().toString(16).padStart(6, '0'));
+                if (color) {
+                    app.setLight2Color(color);
+                    
+                    // Toggle active state
+                    document.querySelectorAll('.color-btn').forEach(btn => btn.classList.remove('active'));
+                    color2Btn.classList.add('active');
+                }
+            });
+            
+            resetBtn.addEventListener('click', () => {
+                // Reset to default values
+                app.setAttractionIntensity(0.75);
+                app.setParticleSize(1.5);
+                app.setParticleCount(800);
+                app.setParticleSpeed(1.0);
+                app.setAttractionRadius(200);
+                app.setColorMode('dual');
+                app.setLight1Color(0xff7e5f);
+                app.setLight2Color(0xa0a0ff);
+                
+                // Reset sliders
+                attractionSlider.value = 0.75;
+                sizeSlider.value = 1.5;
+                countSlider.value = 800;
+                speedSlider.value = 1.0;
+                radiusSlider.value = 200;
+                
+                // Reset mode buttons
+                modeButtons.forEach(btn => btn.classList.remove('active'));
+                document.querySelector('.mode-btn[data-mode="dual"]').classList.add('active');
+                
+                // Reset color buttons
+                document.querySelectorAll('.color-btn').forEach(btn => btn.classList.remove('active'));
+                document.querySelector('.color-btn[data-color="light1"]').classList.add('active');
+                
+                // Reset preset button text
+                presetColorsBtn.innerHTML = '<i class="fas fa-palette"></i> Presets';
+                
+                // Visual feedback
+                resetBtn.innerHTML = '<i class="fas fa-check"></i> Reset Complete!';
+                setTimeout(() => {
+                    resetBtn.innerHTML = '<i class="fas fa-redo"></i> Reset Settings';
+                }, 1500);
+            });
+            
+            // Mode buttons
+            modeButtons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    modeButtons.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    app.setColorMode(btn.dataset.mode);
+                });
+            });
+            
+            // Fullscreen toggle
+            fullscreenBtn.addEventListener('click', () => {
+                if (!document.fullscreenElement) {
+                    document.documentElement.requestFullscreen().catch(err => {
+                        console.log(`Error attempting to enable fullscreen: ${err.message}`);
+                    });
+                    fullscreenBtn.innerHTML = '<i class="fas fa-compress"></i> Exit Fullscreen';
+                } else {
+                    if (document.exitFullscreen) {
+                        document.exitFullscreen();
+                        fullscreenBtn.innerHTML = '<i class="fas fa-expand"></i> Fullscreen';
+                    }
+                }
+            });
+            
+            // Toggle UI visibility
+            let uiVisible = true;
+            toggleUIBtn.addEventListener('click', () => {
+                const uiElements = document.querySelectorAll('.header, .controls-panel, .stats, .instructions, .performance, .buttons');
+                
+                uiElements.forEach(el => {
+                    el.style.opacity = uiVisible ? '0' : '1';
+                    el.style.pointerEvents = uiVisible ? 'none' : 'auto';
+                });
+                
+                toggleUIBtn.innerHTML = uiVisible ? 
+                    '<i class="fas fa-eye-slash"></i> Show UI' : 
+                    '<i class="fas fa-eye"></i> Hide UI';
+                
+                uiVisible = !uiVisible;
+            });
+            
+            // Toggle control panel
+            let panelCollapsed = false;
+            togglePanelBtn.addEventListener('click', () => {
+                const panel = document.querySelector('.controls-panel');
+                panel.classList.toggle('collapsed');
+                panelCollapsed = !panelCollapsed;
+                
+                togglePanelBtn.innerHTML = panelCollapsed ? 
+                    '<i class="fas fa-chevron-down"></i>' : 
+                    '<i class="fas fa-chevron-up"></i>';
+            });
+            
+            // Update FPS counter periodically
+            setInterval(() => {
+                document.getElementById('fps-counter').textContent = app.fps;
+            }, 1000);
+            
+            // Handle framer link click
+            framerLink.addEventListener('click', (e) => {
+                // Add animation to link
+                e.target.style.transform = 'scale(0.95)';
+                setTimeout(() => {
+                    e.target.style.transform = '';
+                }, 200);
+            });
+            
+            // Add keyboard shortcuts
+            document.addEventListener('keydown', (e) => {
+                // Space for random colors
+                if (e.code === 'Space') {
+                    e.preventDefault();
+                    app.setRandomColors();
+                    
+                    // Visual feedback
+                    colorsBtn.style.transform = 'scale(0.9)';
+                    setTimeout(() => {
+                        colorsBtn.style.transform = '';
+                    }, 200);
+                }
+                
+                // R for reset
+                if (e.code === 'KeyR') {
+                    e.preventDefault();
+                    resetBtn.click();
+                }
+                
+                // H to hide UI
+                if (e.code === 'KeyH') {
+                    e.preventDefault();
+                    toggleUIBtn.click();
+                }
+                
+                // F for fullscreen
+                if (e.code === 'KeyF') {
+                    e.preventDefault();
+                    fullscreenBtn.click();
+                }
+                
+                // 1, 2, 3 for color modes
+                if (e.code === 'Digit1') {
+                    document.querySelector('.mode-btn[data-mode="dual"]').click();
+                }
+                if (e.code === 'Digit2') {
+                    document.querySelector('.mode-btn[data-mode="gradient"]').click();
+                }
+                if (e.code === 'Digit3') {
+                    document.querySelector('.mode-btn[data-mode="rainbow"]').click();
+                }
+            });
+            
+            // Add instructions tooltip
+            const instructions = document.querySelector('.instructions');
+            let instructionsTimeout;
+            
+            instructions.addEventListener('mouseenter', () => {
+                clearTimeout(instructionsTimeout);
+            });
+            
+            instructions.addEventListener('mouseleave', () => {
+                instructionsTimeout = setTimeout(() => {
+                    instructions.style.opacity = '0.5';
+                }, 3000);
+            });
+            
+            // Initialize instructions fade
+            instructionsTimeout = setTimeout(() => {
+                instructions.style.opacity = '0.5';
+            }, 5000);
+            
+            // Instructions hover restore
+            instructions.addEventListener('mouseenter', () => {
+                instructions.style.opacity = '1';
+            });
+            
+            // Performance optimization for mobile
+            if ('ontouchstart' in window) {
+                // Reduce particle count on mobile for better performance
+                app.setParticleCount(400);
+                countSlider.value = 400;
+                document.getElementById('particles-count').textContent = '400';
+                document.getElementById('performance-count').textContent = '400';
+                
+                // Show mobile notice
+                const mobileNotice = document.createElement('div');
+                mobileNotice.style.cssText = `
+                    position: fixed;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                    background: rgba(0, 0, 0, 0.8);
+                    color: white;
+                    padding: 20px;
+                    border-radius: 10px;
+                    text-align: center;
+                    z-index: 100;
+                    max-width: 80%;
+                    backdrop-filter: blur(10px);
+                    border: 1px solid rgba(255, 255, 255, 0.2);
+                `;
+                mobileNotice.innerHTML = `
+                    <h3>Mobile Mode</h3>
+                    <p>Particle count reduced for better performance.</p>
+                    <p>Touch and drag to interact with particles.</p>
+                    <button style="margin-top: 10px; padding: 8px 16px; background: #ff7e5f; border: none; border-radius: 5px; color: white; font-weight: bold;">
+                        OK
+                    </button>
+                `;
+                document.getElementById('app').appendChild(mobileNotice);
+                
+                mobileNotice.querySelector('button').addEventListener('click', () => {
+                    mobileNotice.style.opacity = '0';
+                    setTimeout(() => {
+                        mobileNotice.remove();
+                    }, 300);
+                });
+                
+                setTimeout(() => {
+                    mobileNotice.style.opacity = '0';
+                    setTimeout(() => {
+                        mobileNotice.remove();
+                    }, 300);
+                }, 3000);
+            }
+        });
+    </script>
+</body>
+</html>
